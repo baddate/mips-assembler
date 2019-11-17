@@ -14,25 +14,67 @@ int search(char *instruction);
 
 // Array that holds the supported instructions
 char *instructions[] = {
-		"la",	// 0
-		"lui",	// 1
-		"lw",	// 2
-		"sw",	// 3
-		"add",	// 4
-		"sub",	// 5
-		"addi",	// 6
-		"or",	// 7
-		"and",	// 8
-		"ori",	// 9
-		"andi",	// 10
-		"slt",	// 11
-		"slti",	// 12
-		"sll",	// 13
-		"srl",	// 14
-		"beq",	// 15
-		"j",	// 16
-		"jr",	// 17
-		"jal"	// 18
+		"la",
+		// R-Type
+	    "add",
+	    "sub",
+	    "xor",
+	    "jr",
+	    "addu",
+	    "subu",
+	    "or",
+	    "and",
+	    "slt",
+	    "sll",
+	    "srl",
+	    "nor",
+	    "sra",
+	    "sltu",
+	    "sllv",
+	    "srlv",
+	    "srav",
+	    "mult",
+	    "multu",
+	    "div",
+	    "divu",
+	    "mthi",
+	    "mtlo",
+	    "mfhi",
+	    "mflo",
+	    "jalr",
+	    "break",
+	    "syscall",
+	    "eret",
+	    "mfc0",
+	    "mtc0",
+	    // I-Type
+	    "lui",
+	    "lw",
+	    "sw",
+	    "ori",
+	    "andi",
+	    "addi",
+	    "beq",
+	    "slti",
+	    "xori",
+	    "lb",
+	    "lh",
+	    "lbu",
+	    "lhu",
+	    "sb",
+	    "sh",
+	    "addiu",
+	    "bne",
+	    "sltiu",
+	    "bgez",
+	    "bgtz",
+	    "blez",
+	    "bltz",
+	    "bgezal",
+	    "bltzal",
+	    // J-Type
+	    "j",
+    	"jal"
 	};
 
 // Size of array

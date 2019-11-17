@@ -6,7 +6,8 @@
 #include <unistd.h>
 #include "file_parser.h"
 #include "tokenizer.h"
-
+#include <errno.h>
+extern int search(char *instruction);
 /*
  * The structs below map a character to an integer.
  * They are used in order to map a specific instruciton/register to its binary format in ASCII
@@ -14,75 +15,130 @@
 
 // Struct that stores registers and their respective binary reference
 struct {
-	const char *name;
-	char *address;
+    const char *name;
+    char *address;
 } registerMap[] = {
-		{ "zero", "00000" },
-		{ "at", "00001" },
-		{ "v0", "00010" },
-		{ "v1", "00011" },
-		{ "a0", "00100" },
-		{ "a1", "00101" },
-		{ "a2", "00110" },
-		{ "a3", "00111" },
-		{ "t0", "01000" },
-		{ "t1", "01001" },
-		{ "t2", "01010" },
-		{ "t3", "01011" },
-		{ "t4", "01100" },
-		{ "t5", "01101" },
-		{ "t6", "01110" },
-		{ "t7", "01111" },
-		{ "s0", "10000" },
-		{ "s1", "10001" },
-		{ "s2", "10010" },
-		{ "s3", "10011" },
-		{ "s4", "10100" },
-		{ "s5", "10101" },
-		{ "s6", "10110" },
-		{ "s7", "10111" },
-		{ "t8", "11000" },
-		{ "t9", "11001" },
-		{ NULL, 0 } };
+    { "zero", "00000" }, 
+    { "at", "00001" },	
+    { "v0", "00010" }, 
+    { "v1", "00011" },
+    { "a0", "00100" },
+    { "a1", "00101" },
+    { "a2", "00110" },
+    { "a3", "00111" },
+    { "t0", "01000" },
+    { "t1", "01001" },
+    { "t2", "01010" },
+    { "t3", "01011" },
+    { "t4", "01100" },
+    { "t5", "01101" },
+    { "t6", "01110" },
+    { "t7", "01111" },
+    { "s0", "10000" },
+    { "s1", "10001" },
+    { "s2", "10010" },
+    { "s3", "10011" },
+    { "s4", "10100" },
+    { "s5", "10101" },
+    { "s6", "10110" },
+    { "s7", "10111" },
+    { "t8", "11000" },
+    { "t9", "11001" },
+    { "k0", "11010" },
+    { "k1", "11011" },
+    { "gp", "11100" },
+    { "sp", "11101" },
+    { "fp", "11110" },
+    { "ra", "11111" },
+    { "status","01100"},
+    { "cause", "01101"},
+    { "epc", "01110"},
+    { NULL, 0 }
+};
 
 // Struct for R-Type instructions mapping for the 'function' field in the instruction
 struct {
-	const char *name;
-	char *function;
+    const char *name;
+    char *function;
 } rMap[] = {
-		{ "add", "100000" },
-		{ "sub", "100001" },
-		{ "and", "100100" },
-		{ "or",  "100101" },
-		{ "sll", "000000" },
-		{ "slt", "101010" },
-		{ "srl", "000010" },
-		{ "jr",  "001000" },
-		{ NULL, 0 } };
+    { "add", "100000" },
+    { "sub", "100010" },
+    { "and", "100100" },
+    { "or",  "100101" },
+    { "sll", "000000" },
+    { "slt", "101010" },
+    { "srl", "000010" },
+    { "jr",  "001000" },
+    { "xor", "100110" },
+    { "addu", "100001" },
+    { "subu", "100011" },
+    { "nor",  "100111" },
+    { "sra",  "000011"},
+    { "sltu", "101011"},
+    { "sllv", "000100"},
+    { "srlv", "000110"},
+    { "srav", "000111"},
+    { "mult", "011000"},
+    { "multu", "011001"},
+    { "div",  "011010"},
+    { "divu", "011011"},
+    { "mfhi", "010000"},
+    { "mflo", "010010"},
+    { "mthi", "010001"},
+    { "mtlo", "010011"},
+    { "jalr", "001001"},
+    { "break", "001101"},
+    { "syscall", "001100"},
+    { "eret", "011000"},
+    { "mfc0", "000000"},
+    { "mtc0", "000000"},
+
+    { NULL, 0 }
+};
 
 // Struct for I-Type instructions
 struct {
-	const char *name;
-	char *address;
+    const char *name;
+    char *address;
 } iMap[] = {
-		{ "lw",   "100011" },
-		{ "sw",   "101011" },
-		{ "andi", "001100" },
-		{ "ori",  "001101" },
-		{ "lui",  "001111" },
-		{ "beq",  "000100" },
-		{ "slti", "001010" },
-		{ "addi", "001000" },
-		{ NULL, 0 } };
+    { "lw",   "100011" },
+    { "sw",   "101011" },
+    { "andi", "001100" },
+    { "ori",  "001101" },
+    { "lui",  "001111" },
+    { "beq",  "000100" },
+    { "slti", "001010" },
+    { "addi", "001000" },
+    { "xori", "001110" },
+    { "lb",   "100000" },
+    { "lbu",  "100100" },
+    { "lh",   "100001" },
+    { "lhu",  "100101" },
+    { "sb",   "101000" },
+    { "sh",   "101001" },
+    { "bne",   "000101" },
+    { "sltiu", "001011" },
+    { "bgez",  "000001" },
+    { "bgtz",  "000111" },
+    { "blez",  "000110" },
+    { "bltz",  "000001" },
+    { "bgezal", "000001" },
+    { "bltzal", "000001" },
+    { "addiu", "001001" },
+
+
+    { NULL, 0 }
+};
 
 // Struct for J-Type instructions
 struct {
-	const char *name;
-	char *address;
+    const char *name;
+    char *address;
 } jMap[] = {
-		{ "j", "000010" },
-		{ "jal", "000011" },
-		{ NULL, 0 } };
+    { "j", "000010" },
+    { "jal", "000011" },
+    { NULL, 0 }
+};
 
 void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, hash_table_t *hash_table, FILE *Out) {
 
@@ -303,9 +359,14 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 						if (inst_type == 'r') {
 
 							// R-Type with $rd, $rs, $rt format
-							if (strcmp(token, "add") == 0 || strcmp(token, "sub") == 0
-									|| strcmp(token, "and") == 0
-									|| strcmp(token, "or") == 0 || strcmp(token, "slt") == 0) {
+							if (strcmp(token, "add") == 0 || strcmp(token, "addu") == 0
+									|| strcmp(token, "sub") == 0 || strcmp(token, "subu") == 0 
+									|| strcmp(token, "and") == 0 || strcmp(token, "or") == 0
+									|| strcmp(token, "nor") == 0 || strcmp(token, "xor") == 0
+									|| strcmp(token, "slt") == 0 || strcmp(token, "sltu") == 0
+									|| strcmp(token, "sllv") == 0 || strcmp(token, "srlv") == 0
+									|| strcmp(token, "srav") == 0
+									) {
 
 								// Parse the instructio - get rd, rs, rt registers
 								char *inst_ptr = tok_ptr;
@@ -841,25 +902,45 @@ int binarySearch(char *instructions[], int low, int high, char *string) {
 // Determine Instruction Type
 char instruction_type(char *instruction) {
 
-	if (strcmp(instruction, "add") == 0 || strcmp(instruction, "sub") == 0
-			|| strcmp(instruction, "and") == 0 || strcmp(instruction, "or")
-			== 0 || strcmp(instruction, "sll") == 0 || strcmp(instruction,
-			"slt") == 0 || strcmp(instruction, "srl") == 0 || strcmp(
-			instruction, "jr") == 0) {
+	if (strcmp(instruction, "add") == 0 || strcmp(instruction, "addu") == 0
+			|| strcmp(instruction, "sub") == 0 || strcmp(instruction, "subu") == 0 
+			|| strcmp(instruction, "and") == 0 || strcmp(instruction, "mult") == 0 
+			|| strcmp(instruction, "multu") == 0 || strcmp(instruction, "div") == 0
+            || strcmp(instruction, "divu") == 0 || strcmp(instruction, "mfhi") == 0
+            || strcmp(instruction, "mflo") == 0 || strcmp(instruction, "mthi") == 0
+            || strcmp(instruction, "mtlo") == 0 || strcmp(instruction, "mfc0") == 0
+            || strcmp(instruction, "mtc0") == 0 || strcmp(instruction, "or") == 0
+            || strcmp(instruction, "xor") == 0 || strcmp(instruction, "nor") == 0
+            || strcmp(instruction, "slt") == 0 || strcmp(instruction, "sltu") == 0
+            || strcmp(instruction, "sll") == 0 || strcmp(instruction, "srl") == 0
+            || strcmp(instruction, "sra") == 0 || strcmp(instruction, "sllv") == 0
+            || strcmp(instruction, "srlv") == 0 || strcmp(instruction, "srav") == 0
+            || strcmp(instruction, "jr") == 0 || strcmp(instruction, "jalr") == 0
+            || strcmp(instruction, "eret") == 0
+			) {
 
 		return 'r';
 	}
 
-	else if (strcmp(instruction, "lw") == 0 || strcmp(instruction, "sw") == 0
-			|| strcmp(instruction, "andi") == 0 || strcmp(instruction, "ori")
-			== 0 || strcmp(instruction, "lui") == 0 || strcmp(instruction,
-			"beq") == 0 || strcmp(instruction, "slti") == 0 || strcmp(
-			instruction, "addi") == 0 || strcmp(instruction, "la") == 0) {
+	else if (strcmp(instruction, "addi") == 0 || strcmp(instruction, "addiu") == 0
+				|| strcmp(instruction, "andi") == 0 || strcmp(instruction, "ori") == 0
+				|| strcmp(instruction, "xori") == 0 || strcmp(instruction, "lui") == 0
+				|| strcmp(instruction, "lb") == 0 || strcmp(instruction, "lbu") == 0
+				|| strcmp(instruction, "lh") == 0 || strcmp(instruction, "lhu") == 0
+				|| strcmp(instruction, "sb") == 0 || strcmp(instruction, "sh") == 0
+				|| strcmp(instruction, "lw") == 0 || strcmp(instruction, "sw") == 0
+				|| strcmp(instruction, "beq") == 0 || strcmp(instruction, "bne") == 0
+				|| strcmp(instruction, "bgez") == 0 || strcmp(instruction, "bgtz") == 0
+				|| strcmp(instruction, "blez") == 0 || strcmp(instruction, "bltz") == 0
+				|| strcmp(instruction, "bgezal") == 0 || strcmp(instruction, "bltzal") == 0
+				|| strcmp(instruction, "slti") == 0 || strcmp(instruction, "sltiu") == 0
+		) {
 
 		return 'i';
 	}
 
 	else if (strcmp(instruction, "j") == 0 || strcmp(instruction, "jal") == 0) {
+		
 		return 'j';
 	}
 
@@ -1094,4 +1175,3 @@ int getDec(char *bin) {
 
 	return sum;
 }
-
