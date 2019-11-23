@@ -13,6 +13,28 @@ extern int search(char *instruction);
  * They are used in order to map a specific instruciton/register to its binary format in ASCII
  */
 
+struct {
+    const char* bin;
+    const char hex;
+} bin2hex[] = {
+    { "0000", '0'},
+    { "0001", '1'},
+    { "0010", '2'},
+    { "0011", '3'},
+    { "0100", '4'},
+    { "0101", '5'},
+    { "0110", '6'},
+    { "0111", '7'},
+    { "1000", '8'},
+    { "1001", '9'},
+    { "1010", 'A'},
+    { "1011", 'B'},
+    { "1100", 'C'},
+    { "1101", 'D'},
+    { "1110", 'E'},
+    { "1111", 'F'}
+};
+
 // Struct that stores registers and their respective binary reference
 struct {
     const char *name;
@@ -140,6 +162,8 @@ struct {
     { NULL, 0 }
 };
 
+///---------------------------------------------------------------------------------------------///
+
 void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, hash_table_t *hash_table, FILE *Out) {
 
 	char line[MAX_LINE_LENGTH + 1];
@@ -171,7 +195,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 		/* parse the tokens within a line */
 		while (1) {
 
-			token = parse_token(tok_ptr, " \n\t$,", &tok_ptr, NULL);
+			token = parse_token(tok_ptr, " \n\t$,()", &tok_ptr, NULL);
 
 			/* blank line or comment begins here. go to the next line */
 			if (token == NULL || *token == '#') {
@@ -415,7 +439,9 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 							}
 
 							// R-Type with $rd, $rs, shamt format
-							else if (strcmp(token, "sll") == 0 || strcmp(token, "srl") == 0) {
+							else if (strcmp(token, "sll") == 0 || strcmp(token, "srl") == 0
+								|| strcmp(token, "sra") == 0
+								) {
 
 								// Parse the instructio - get rd, rs, rt registers
 								char *inst_ptr = tok_ptr;
@@ -581,7 +607,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 								int count = 0;
 								while (1) {
 
-									reg = parse_token(inst_ptr, " $,\n\t()", &inst_ptr, NULL);
+									reg = parse_token(inst_ptr, " $,\n\t", &inst_ptr, NULL);
 
 									if (reg == NULL || *reg == '#') {
 										break;
@@ -1175,3 +1201,14 @@ int getDec(char *bin) {
 
 	return sum;
 }
+
+// convert bin to hex
+char getHex(char *bin){
+    int i = 0;
+    while(i < 16) {
+        if(strncmp(bin2hex[i].bin, bin, 4) == 0) break;
+        i++;
+    }
+    return bin2hex[i].hex;
+}
+

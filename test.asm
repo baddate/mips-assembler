@@ -1,5 +1,5 @@
-.data  0x100000 					# 数据段定义开始
-BUF: .word  0X000000FF, 0X55005500
+.data  0x100000                    # 数据段定义开始 
+buf: .word  0X000000FF, 0X55005500 # 定义数据 
 .text
 start:  addi   $t0, $Zero, 0                 
 lw   $v0, buf ($t0)           
