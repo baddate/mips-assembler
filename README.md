@@ -1,5 +1,4 @@
-Mips Assembler
-==============
+## Mips Assembler
 
 An assembler for a subset of the MIPS instruction set.
 

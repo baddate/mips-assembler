@@ -170,6 +170,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	char *tok_ptr, *ret, *token = NULL;
 	int32_t line_num = 1;
 	int data_reached = 0;
+	char *data_begin = NULL; //Data begin address
 
 	while (1) {
 		if ((ret = fgets(line, MAX_LINE_LENGTH, fptr)) == NULL)
@@ -186,7 +187,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 		/* parse the tokens within a line */
 		while (1) {
-			token = parse_token(tok_ptr, " \n\t$,", &tok_ptr, NULL);
+			token = parse_token(tok_ptr, " \n\t$,()", &tok_ptr, NULL);
 
 			/* blank line or comment begins here. go to the next line */
 			if (token == NULL || *token == '#') {
@@ -198,19 +199,468 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 			int x = search(token);
 			if (x >= 0) {
-				if (strcmp(token, "la") == 0)
-					instruction_count = instruction_count + 8;
-				else
-					instruction_count = instruction_count + 4;
+				// if (strcmp(token, "la") == 0)
+				// 	data_begin = data_begin + 8;
+				// else
+					data_begin = data_begin + 4;
 			}
 			else if (strcmp(token, ".data") == 0) {
 				data_reached = 1;
+
+				/*Get data begin address*/
+				char *data_begin = parse_token(tok_ptr, " \n\t$,", &tok_ptr, NULL); 
+				line_num++; 
+				break;
 			}
 
+			if (pass == 1) {
+
+				printf("========== First pass ==========\n");
+
+				// Strip out ":"
+				if (strstr(token, ":") && data_reached == 0) {
+
+					printf("Label\n");
+
+					size_t token_len = strlen(token);
+					token[token_len - 1] = '\0';
+
+					// Insert variable to hash table
+					uint32_t *inst_count;
+					inst_count = (uint32_t *)malloc(sizeof(uint32_t));
+					*inst_count = data_begin; // data begin
+					int32_t insert = hash_insert(hash_table, token, strlen(token)+1, inst_count);
+
+					if (insert != 1) {
+						fprintf(Out, "Error inserting into hash table\n");
+						exit(1);
+					}
+
+				}
+				else {
+					char *var_tok = NULL;
+					char *var_tok_ptr = tok_ptr;
+
+					// If variable is .word
+					if (strstr(tok_ptr, ".word")) {
+
+						printf(".word\n");
+
+						// Variable is array
+						if (strstr(var_tok_ptr, ":")) {
+
+							printf("array\n");
+
+							// Store the number in var_tok and the occurance in var_tok_ptr
+							var_tok = parse_token(var_tok_ptr, ":", &var_tok_ptr, NULL);
+
+							// Convert char* to int
+							int freq = atoi(var_tok_ptr);
+
+							// int num;
+							// sscanf(var_tok, "%*s %d", &num);
+
+							// Increment instruction count by freq
+							data_begin = data_begin + (freq * 4);
+
+							// Strip out ':' from token
+							size_t token_len = strlen(token);
+							token[token_len - 1] = '\0';
+
+							//printf("Key: '%s', len: %zd\n", token, strlen(token));
+
+							// Insert variable to hash table
+							uint32_t *inst_count;
+							inst_count = (uint32_t *)malloc(sizeof(uint32_t));
+							*inst_count = data_begin;
+							int32_t insert = hash_insert(hash_table, token, strlen(token)+1, inst_count);
+
+							if (insert == 0) {
+								fprintf(Out, "Error in hash table insertion\n");
+								exit(1);
+							}
+
+							printf("End array\n");
+						}
+
+						// Variable is a single variable
+						else {
+
+							data_begin = data_begin + 4;
+
+							// Strip out ':' from token
+							size_t token_len = strlen(token);
+							token[token_len - 1] = '\0';
+
+							// Insert variable to hash table
+							uint32_t *inst_count;
+							inst_count = (uint32_t *)malloc(sizeof(uint32_t));
+							*inst_count = data_begin;
+							int32_t insert = hash_insert(hash_table, token, strlen(token)+1, inst_count);
+
+							if (insert == 0) {
+								fprintf(Out, "Error in hash table insertion\n");
+								exit(1);
+							}
+
+							printf("end singe var\n");
+						}
+					}
+
+					// Variable is a string
+					else if (strstr(tok_ptr, ".asciiz")) {
+
+						// Store the ascii in var_tok
+						var_tok_ptr+= 8;
+						var_tok = parse_token(var_tok_ptr, "\"", &var_tok_ptr, NULL);
+
+						// Increment instruction count by string length
+						size_t str_byte_len = strlen(var_tok);
+						data_begin = data_begin + str_byte_len;
+
+						// Strip out ':' from token
+						size_t token_len = strlen(token);
+						token[token_len - 1] = '\0';
+
+						// Insert variable to hash table
+						uint32_t *inst_count;
+						inst_count = (uint32_t *)malloc(sizeof(uint32_t));
+						*inst_count = data_begin;
+						int32_t insert = hash_insert(hash_table, token, strlen(token)+1, inst_count);
+
+						if (insert == 0) {
+							fprintf(Out, "Error in hash table insertion\n");
+							exit(1);
+						}
+					}
+				}
+			}
+
+			if(pass == 2) {
+				printf("############ Pass 2 ##############\n");
+
+				// .text part reached
+				if (data_reached == 0) {
+					// Check instruction type
+					int instruction_supported = search(token);
+					char inst_type;
+
+					// If instruction is supported
+					if (instruction_supported != -1) {
+
+						// Determine instruction type
+						char *inst_ptr = tok_ptr;
+							char *reg = NULL;
+
+							// Create an array of char* that stores rd, rs, rt respectively
+							char **reg_store;
+							reg_store = malloc(3 * sizeof(char*));
+							if (reg_store == NULL) {
+								fprintf(Out, "Out of memory\n");
+								exit(1);
+							}
+
+							for (int i = 0; i < 3; i++) {
+								reg_store[i] = malloc(2 * sizeof(char));
+								if (reg_store[i] == NULL) {
+									fprintf(Out, "Out of memory\n");
+									exit(1);
+								}
+							}
+							// Keeps a reference to which register has been parsed for storage
+							int count = 0;
+							while (1) {
+
+								reg = parse_token(inst_ptr, " $,\n\t", &inst_ptr, NULL);
+
+								if (reg == NULL || *reg == '#') {
+									break;
+								}
+
+								strcpy(reg_store[count], reg);
+								count++;
+								free(reg);
+							}
+
+						inst_type = instruction_type(token);
+						if (inst_type == 'r') {
+							
+
+							// R-Type with $rs, $rt, $rd format
+							if (strcmp(token, "sllv") == 0 || strcmp(token, "srlv") == 0
+									|| strcmp(token, "srav") == 0
+									) {
+								// Send reg_store for output
+								// rd is in position 0, rs is in position 1 and rt is in position 2
+								rtype_instruction(token, reg_store[2], reg_store[1], reg_store[0], 0, Out);
+
+								// Dealloc reg_store
+								for (int i = 0; i < 3; i++) {
+									free(reg_store[i]);
+								}
+								free(reg_store);
+							}
+							// R-Type with $rs, $rt, $rd format
+							if (strcmp(token, "add") == 0 || strcmp(token, "addu") == 0
+									|| strcmp(token, "sub") == 0 || strcmp(token, "subu") == 0 
+									|| strcmp(token, "and") == 0 || strcmp(token, "or") == 0
+									|| strcmp(token, "nor") == 0 || strcmp(token, "xor") == 0
+									|| strcmp(token, "slt") == 0 || strcmp(token, "sltu") == 0
+									) {
+								// Send reg_store for output
+								// rd is in position 0, rs is in position 1 and rt is in position 2
+								rtype_instruction(token, reg_store[1], reg_store[2], reg_store[0], 0, Out);
+								
+								// Dealloc reg_store
+								for (int i = 0; i < 3; i++) {
+									free(reg_store[i]);
+								}
+								free(reg_store);
+							}
+
+							// R-Type with $rd, $rs, shamt format
+	                        else if (strcmp(token, "sll")   == 0 || strcmp(token, "srl") == 0
+	                                 || strcmp(token, "sra") == 0) {
+
+	                            // Send reg_store for output
+	                            // rd is in position 0, rs is in position 1 and shamt is in position 2
+	                            rtype_instruction(token, "00000", reg_store[1], reg_store[0], atoi(reg_store[2]), Out);
+	                        }
+	                        // R-type with $rs, $rt, "00000" format
+	                        else if (strcmp(token, "mult")  == 0 || strcmp(token, "multu") == 0
+	                                 || strcmp(token, "div") == 0 || strcmp(token, "divu")  == 0) {
+
+	                            rtype_instruction(token, reg_store[0], reg_store[1], "00000", 0, Out);
+
+	                        }
+	                        // R-type
+	                        else if (strcmp(token, "mfhi") == 0 || strcmp(token, "mflo") == 0) {
+	                                rtype_instruction(token, "00000", "00000", reg_store[0], 0, Out);
+	                        }
+	                        // R-type
+	                        else if (strcmp(token, "mthi") == 0 || strcmp(token, "mtlo") == 0) {
+	                                rtype_instruction(token, reg_store[0], "00000", "00000", 0, Out);
+	                        }
+	                        // R-type
+	                        else if (strcmp(token, "mfc0") == 0 || strcmp(token, "mtc0") == 0) {
+
+	                            if (strcmp(token, "mfc0") == 0 ) {
+	                                rtype_instruction(token, "00000", reg_store[0], reg_store[1], 0, Out);
+	                            }
+
+	                            if (strcmp(token, "mtc0") == 0) {
+	                                rtype_instruction(token, "00100", reg_store[0], reg_store[1], 0, Out);
+	                            }
+	                        }
+	                        // R-type
+	                        else if (strcmp(token, "jalr") == 0) {
+	                            rtype_instruction(token, reg_store[1], "00000", reg_store[0], 0, Out);
+	                        }
+	                        // R-type
+	                        else if (strcmp(token, "jr") == 0) {
+	                            rtype_instruction(token, reg_store[0], "00000", "00000", 0, Out);
+	                        }
+	                        // R-type
+	                        else if (strcmp(token, "eret") == 0) {
+	                            rtype_instruction(token, "10000", "00000", "00000", 0, Out);
+	                        }
+						}
+						// I-Type 
+						else if (inst_type == 'i') {
+
+							// I-Type with $rt, i/var($rs)
+							if (strcmp(token, "lw") == 0 || strcmp(token, "sw") == 0
+								|| strcmp(token, "lb") == 0 || strcmp(token, "lbu") == 0
+                                || strcmp(token, "lh") == 0 || strcmp(token, "lhu") == 0
+                                || strcmp(token, "sb") == 0 || strcmp(token, "sh")  == 0) {
+								
+								int *address = hash_find(hash_table, reg_store[1], strlen(reg_store[1])+1);
+								int immediate = 0;
+								if(address == NULL) { // rt in position 0, immediate in position 1 and rs in position2
+									int immediate = atoi(reg_store[1]);
+								}
+								else { // rt in position 0, variable in position 1 and rs in position2
+									immediate = *address;
+									printf("The label address is %d\n", *address);
+								}
+								itype_instruction(token, reg_store[2], reg_store[0], immediate, Out);
+
+								// Dealloc reg_store
+								for (int i = 0; i < 3; i++) {
+									free(reg_store[i]);
+								}
+								free(reg_store);
+							}
+
+							// I-type rt, rs, im
+							else if (strcmp(token, "andi") == 0 || strcmp( token, "ori") == 0
+									|| strcmp(token, "slti") == 0 || strcmp(token, "addi") == 0
+									|| strcmp(token, "xori")   == 0 || strcmp(token, "sltiu") == 0
+                                 	|| strcmp(token, "addiu")  == 0) {
+
+								// rt in position 0, rs in position 1 and immediate in position 2
+								int immediate = atoi(reg_store[2]);
+								itype_instruction(token, reg_store[1], reg_store[0], immediate, Out);
+
+								// Dealloc reg_store
+								for (int i = 0; i < 3; i++) {
+									free(reg_store[i]);
+								}
+								free(reg_store);
+							}
+							// I-type with $rt, immediate
+							else if (strcmp(token, "lui") == 0) {
+								
+								// rt in position 0, immediate in position 1
+								int immediate = atoi(reg_store[1]);
+								itype_instruction(token, "00000", reg_store[0], immediate, Out);
+
+								// Dealloc reg_store
+								for (int i = 0; i < 3; i++) {
+									free(reg_store[i]);
+								}
+								free(reg_store);
+							}
+							// I-type with $rs, $rt, offset
+							else if (strcmp(token, "beq") == 0 || strcmp(token, "bne") == 0) {
+
+								//reg = parse_token(inst_ptr, " $,\n\t", &inst_ptr, NULL);
+
+								// Find hash address for a register and put in an immediate
+								int *address = hash_find(hash_table, reg_store[2], strlen(reg_store[2])+1);
+								
+								int immediate = *address + data_begin;
+
+								// Send instruction to itype function
+								itype_instruction(token, reg_store[0], reg_store[1], immediate, Out);
+
+								// Dealloc reg_store
+								for (int i = 0; i < 2; i++) {
+									free(reg_store[i]);
+								}
+								free(reg_store);
+							}
+							// I-type with $rs, constant and offset
+							else if (strcmp(token, "bgez") == 0 || strcmp(token, "bgtz")   == 0
+                                 || strcmp(token, "blez")   == 0 || strcmp(token, "bltz")   == 0
+                                 || strcmp(token, "bgezal") == 0 || strcmp(token, "bltzal") == 0) {
 
 
+								int *address = hash_find(hash_table, reg_store[1], strlen(reg_store[1])+1);
+								int immediate = data_begin - *address;
+								immediate = immediate >> 2;
+
+								if (strcmp(token, "bgez") == 0) {
+	                                // Send instruction to itype function
+
+	                                itype_instruction(token, reg_store[0], "00001", immediate, Out);
+	                            }
+	                            if (strcmp(token, "bgtz") == 0|| strcmp(token, "blez") == 0
+	                                    || strcmp(token, "bltz") == 0) {
+	                                // Send instruction to itype function
+	                                itype_instruction(token, reg_store[0], "00000", immediate, Out);
+	                            }
+	                            if (strcmp(token, "bgezal") == 0 ) {
+	                                // Send instruction to itype function
+	                                itype_instruction(token, reg_store[0], "10001", immediate, Out);
+	                            }
+	                            if (strcmp(token, "bltzal") == 0) {
+	                                // Send instruction to itype function
+	                                itype_instruction(token, reg_store[0], "10000", immediate, Out);
+	                            }
+							}
+							
+						}
+						// J-Type
+		                else if (inst_type == 'j') {
+		                    // Find hash address for a label and put in an immediate
+		                    int *address = hash_find(hash_table, reg_store[0], strlen(reg_store[0])+1);
+	                        int immediate = *address >> 2;
+
+	                        // Send to jtype function
+	                        jtype_instruction(token, immediate, Out);
+		                }
+					}
+					
+				}
+				// .data part reached
+				else {
+					char *var_tok = NULL;
+					char *var_tok_ptr = tok_ptr;
+					// If variable is .word
+					if (strstr(tok_ptr, ".word")) {
+						int var_value;
+
+						// Variable is array
+						if (strstr(var_tok_ptr, ":")) {
+
+							// Store the number in var_tok and the occurance in var_tok_ptr
+							var_tok = parse_token(var_tok_ptr, ":", &var_tok_ptr, NULL);
+
+							// Extract array size, or variable frequency
+							int freq = atoi(var_tok_ptr);
+
+							// Extract variable value
+							sscanf(var_tok, "%*s %d", &var_value);
+
+							// Value var_value is repeated freq times. Send to binary rep function
+							for (int i = 0; i < freq; i++) {
+								word_rep(var_value, Out);
+							}
+						}
+
+						// Variable is a single variable
+						else {
+							char *hex_pre = "0x";
+							char *tmp = NULL;
+
+							// Variable is hex format
+							if(strstr(var_tok_ptr,hex_pre) != NULL) {
+
+								tmp = parse_token(var_tok_ptr, hex_pre, &var_tok_ptr, NULL);
+								int len = strlen(var_tok_ptr);
+								if(len <= 9) {
+
+									sscanf(var_tok_ptr,"%x", &var_value);
+									word_rep(var_value, Out);
+								}
+								else {
+									fprintf(stderr, "Error! variable length out of size\n");
+								}
+							}
+							// Variable is dec format
+							else {
+								// Extract variable value, Skip %*s
+								sscanf(var_tok_ptr, "%*s, %d", &var_value);
+
+								// Variable is in var_value. Send to binary rep function
+								word_rep(var_value, Out);
+							}
+							
+						}
+					}
+					//
+					// Variable is a string
+					else if (strstr(tok_ptr, ".asciiz")) {
+						printf("tok_ptr '%s'\n", tok_ptr);
+
+						if (strncmp(".asciiz ", var_tok_ptr, 8) == 0) {
+
+							// Move var_tok_ptr to beginning of string
+							var_tok_ptr = var_tok_ptr + 9;
+
+							// Strip out quotation at the end
+							// Place string in var_tok
+							var_tok = parse_token(var_tok_ptr, "\"", &var_tok_ptr, NULL);
+
+							ascii_rep(var_tok, Out);
+						}
+					}
+				}
+			}
 
 		}
+		free(token);
 	}
 }
 
@@ -349,8 +799,17 @@ void itype_instruction(char *instruction, char *rs, char *rt, int immediateNum, 
 		rsBin = register_address(rs);
 
 	char *rtBin = "00000";
-		if (strcmp(rt, "00000") != 0)
-			rtBin = register_address(rt);
+	if (strcmp(rt, "00000") != 0 && strcmp(rt, "00001") != 0
+            && strcmp(rt, "10001") != 0 && strcmp(rt, "10000") != 0)
+        rtBin = register_address(rt);
+
+    if (strcmp(rt, "00001") == 0)
+        rtBin = "00001";
+    if (strcmp(rt, "10001") == 0)
+        rtBin = "10001";
+    if (strcmp(rt, "10000") == 0)
+        rtBin = "10000";
+
 
 	char *opcode = NULL;
 	char immediate[17];
