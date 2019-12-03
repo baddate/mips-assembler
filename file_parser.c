@@ -16,7 +16,7 @@ extern int search(char *instruction);
 struct {
     const char* bin;
     const char hex;
-} bin2hex[] = {
+} bin2hex_table[] = {
     { "0000", '0'},
     { "0001", '1'},
     { "0010", '2'},
@@ -170,7 +170,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	char *tok_ptr, *ret, *token = NULL;
 	int32_t line_num = 1;
 	int data_reached = 0;
-	char *data_begin = NULL; //Data begin address
+	int32_t data_begin = 0x00000000; //Data begin address
 
 	while (1) {
 		if ((ret = fgets(line, MAX_LINE_LENGTH, fptr)) == NULL)
@@ -205,12 +205,11 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 					data_begin = data_begin + 4;
 			}
 			else if (strcmp(token, ".data") == 0) {
+				data_begin = 0x00002000;
 				data_reached = 1;
-
-				/*Get data begin address*/
-				char *data_begin = parse_token(tok_ptr, " \n\t$,", &tok_ptr, NULL); 
-				line_num++; 
-				break;
+				free(token);
+				continue;
+				//break;
 			}
 
 			if (pass == 1) {
@@ -337,7 +336,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 			}
 
 			if(pass == 2) {
-				printf("############ Pass 2 ##############\n");
+				printf("========== Pass 2 ==========\n");
 
 				// .text part reached
 				if (data_reached == 0) {
@@ -390,8 +389,6 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 							if (strcmp(token, "sllv") == 0 || strcmp(token, "srlv") == 0
 									|| strcmp(token, "srav") == 0
 									) {
-								// Send reg_store for output
-								// rd is in position 0, rs is in position 1 and rt is in position 2
 								rtype_instruction(token, reg_store[2], reg_store[1], reg_store[0], 0, Out);
 
 								// Dealloc reg_store
@@ -402,13 +399,11 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 							}
 							// R-Type with $rs, $rt, $rd format
 							if (strcmp(token, "add") == 0 || strcmp(token, "addu") == 0
-									|| strcmp(token, "sub") == 0 || strcmp(token, "subu") == 0 
+									|| strcmp(token, "sub") == 0 || strcmp(token, "subu") == 0
 									|| strcmp(token, "and") == 0 || strcmp(token, "or") == 0
 									|| strcmp(token, "nor") == 0 || strcmp(token, "xor") == 0
 									|| strcmp(token, "slt") == 0 || strcmp(token, "sltu") == 0
 									) {
-								// Send reg_store for output
-								// rd is in position 0, rs is in position 1 and rt is in position 2
 								rtype_instruction(token, reg_store[1], reg_store[2], reg_store[0], 0, Out);
 								
 								// Dealloc reg_store
@@ -619,9 +614,13 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 								tmp = parse_token(var_tok_ptr, hex_pre, &var_tok_ptr, NULL);
 								int len = strlen(var_tok_ptr);
-								if(len <= 9) {
+								printf("DATA LEN: '%d'\n", len);
+								if(len <= 10) {
 
 									sscanf(var_tok_ptr,"%x", &var_value);
+
+									//var_value = hex2bin(var_value);
+									//printf("HEX to BIN: %s\n", var_value);
 									word_rep(var_value, Out);
 								}
 								else {
@@ -766,8 +765,12 @@ void rtype_instruction(char *instruction, char *rs, char *rt, char *rd, int sham
 		rdBin = register_address(rd);
 
 	char *rsBin = "00000";
-	if (strcmp(rs, "00000") != 0)
-		rsBin = register_address(rs);
+    if (strcmp(rs, "00000") != 0 && strcmp(rs, "10000") != 0 && strcmp(rs, "00100") != 0 )
+        rsBin = register_address(rs);
+    if (strcmp(rs, "10000") == 0)
+        rsBin = "10000";
+    if (strcmp(rs, "00100") == 0)
+        rsBin = "00100";
 
 	char *rtBin = "00000";
 	if (strcmp(rt, "00000") != 0)
@@ -786,6 +789,13 @@ void rtype_instruction(char *instruction, char *rs, char *rt, char *rd, int sham
 		}
 	}
 
+	if (strcmp(func, "011000") == 0 && strcmp(rs, "10000") == 0) //eret
+        opcode = "010000";
+    if (strcmp(func, "000000") == 0 && strcmp(rs, "00000") == 0 && shamt ==0) //mfc0
+        opcode = "010000";
+    if (strcmp(func, "000000") == 0 && strcmp(rs, "00100") == 0) //mtc0
+        opcode = "010000";
+
 	// Print out the instruction to the file
 	fprintf(Out, "%s%s%s%s%s%s\n", opcode, rsBin, rtBin, rdBin, shamtBin, func);
 }
@@ -802,14 +812,12 @@ void itype_instruction(char *instruction, char *rs, char *rt, int immediateNum, 
 	if (strcmp(rt, "00000") != 0 && strcmp(rt, "00001") != 0
             && strcmp(rt, "10001") != 0 && strcmp(rt, "10000") != 0)
         rtBin = register_address(rt);
-
     if (strcmp(rt, "00001") == 0)
         rtBin = "00001";
     if (strcmp(rt, "10001") == 0)
         rtBin = "10001";
     if (strcmp(rt, "10000") == 0)
         rtBin = "10000";
-
 
 	char *opcode = NULL;
 	char immediate[17];
@@ -979,13 +987,11 @@ int getDec(char *bin) {
 	return sum;
 }
 
-// convert bin to hex
-char getHex(char *bin){
-    int i = 0;
-    while(i < 16) {
-        if(strncmp(bin2hex[i].bin, bin, 4) == 0) break;
-        i++;
-    }
-    return bin2hex[i].hex;
-}
+// convert hex to bin
+// int hex2bin(int *hex) {
+// 	int len = strlen(hex);
 
+// 	while(len!=0){
+
+// 	}
+// }

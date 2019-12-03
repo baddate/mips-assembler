@@ -14,7 +14,6 @@ int search(char *instruction);
 
 // Array that holds the supported instructions
 char *instructions[] = {
-		"la",
 		// R-Type
 	    "add",
 	    "sub",

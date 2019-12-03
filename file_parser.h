@@ -23,5 +23,5 @@ void word_rep(int binary_rep, FILE *Out);
 void ascii_rep(char string[], FILE *Out);
 void getBin(int num, char *str, int padding);
 int getDec(char *bin);
-
+// int hex2bin(int *hex);
 #endif /* FILE_PARSER_H_ */
