@@ -40,7 +40,7 @@ struct {
     const char *name;
     char *address;
 } registerMap[] = {
-    { "zero", "00000" }, 
+    { "Zero", "00000" }, 
     { "at", "00001" },	
     { "v0", "00010" }, 
     { "v1", "00011" },
@@ -187,7 +187,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 		/* parse the tokens within a line */
 		while (1) {
-			token = parse_token(tok_ptr, " \n\t$,()", &tok_ptr, NULL);
+			token = parse_token(tok_ptr, " \n\t$,", &tok_ptr, NULL);
 
 			/* blank line or comment begins here. go to the next line */
 			if (token == NULL || *token == '#') {
@@ -207,8 +207,15 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 			else if (strcmp(token, ".data") == 0) {
 				data_begin = 0x00002000;
 				data_reached = 1;
-				free(token);
-				continue;
+				//free(token);
+				//continue;
+				//break;
+			}
+			else if (strcmp(token, ".text") == 0) {
+				//data_begin = 0x00002000;
+				data_reached = 0;
+				//free(token);
+				//continue;
 				//break;
 			}
 
@@ -371,12 +378,13 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 							while (1) {
 
 								reg = parse_token(inst_ptr, " $,\n\t", &inst_ptr, NULL);
-
+								printf("reg: %s\n", reg);
 								if (reg == NULL || *reg == '#') {
 									break;
 								}
 
 								strcpy(reg_store[count], reg);
+
 								count++;
 								free(reg);
 							}
@@ -384,7 +392,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 						inst_type = instruction_type(token);
 						if (inst_type == 'r') {
 							
-
+							
 							// R-Type with $rs, $rt, $rd format
 							if (strcmp(token, "sllv") == 0 || strcmp(token, "srlv") == 0
 									|| strcmp(token, "srav") == 0
@@ -494,7 +502,9 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
                                  	|| strcmp(token, "addiu")  == 0) {
 
 								// rt in position 0, rs in position 1 and immediate in position 2
+								printf("PIM: %d\n", reg_store[2]);
 								int immediate = atoi(reg_store[2]);
+								printf("IM: %d\n", immediate);
 								itype_instruction(token, reg_store[1], reg_store[0], immediate, Out);
 
 								// Dealloc reg_store
@@ -579,13 +589,17 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 					
 				}
 				// .data part reached
+
 				else {
+					fprintf(Out, "%s\n", "data data+++++++++++++++++++++++++++++++++++++");
 					char *var_tok = NULL;
 					char *var_tok_ptr = tok_ptr;
 					// If variable is .word
+					fprintf(Out, "tok: %s\n", tok_ptr);
+					//fprintf(Out, "var_tok: %s\n", var_tok_ptr);
 					if (strstr(tok_ptr, ".word")) {
 						int var_value;
-
+						fprintf(Out, "%s\n", ".word+++++++++++++++++++++++++++++++++++++");
 						// Variable is array
 						if (strstr(var_tok_ptr, ":")) {
 
@@ -659,7 +673,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 			}
 
 		}
-		free(token);
+		//free(token);
 	}
 }
 
@@ -743,7 +757,7 @@ char instruction_type(char *instruction) {
 
 // Return the binary representation of the register
 char *register_address(char *registerName) {
-
+	printf("asfsfgag: %s\n", registerName);
 	size_t i;
 	for (i = 0; registerMap[i].name != NULL; i++) {
 		if (strcmp(registerName, registerMap[i].name) == 0) {
@@ -751,7 +765,7 @@ char *register_address(char *registerName) {
 		}
 	}
 
-	return NULL;
+	return " test ";
 }
 
 // Write out the R-Type instruction
@@ -986,12 +1000,3 @@ int getDec(char *bin) {
 
 	return sum;
 }
-
-// convert hex to bin
-// int hex2bin(int *hex) {
-// 	int len = strlen(hex);
-
-// 	while(len!=0){
-
-// 	}
-// }
