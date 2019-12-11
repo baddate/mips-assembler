@@ -205,17 +205,10 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 					data_begin = data_begin + 4;
 			}
 			else if (strcmp(token, ".data") == 0) {
-				data_begin = 0x00002000;
+				data_begin = 0x00000000;
 				data_reached = 1;
 				//free(token);
-				//continue;
-				//break;
-			}
-			else if (strcmp(token, ".text") == 0) {
-				//data_begin = 0x00002000;
-				data_reached = 0;
-				//free(token);
-				//continue;
+				continue;
 				//break;
 			}
 
@@ -347,6 +340,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 				// .text part reached
 				if (data_reached == 0) {
+					//printf("TEXT-----------------------\n");
 					// Check instruction type
 					int instruction_supported = search(token);
 					char inst_type;
@@ -377,7 +371,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 							int count = 0;
 							while (1) {
 
-								reg = parse_token(inst_ptr, " $,\n\t", &inst_ptr, NULL);
+								reg = parse_token(inst_ptr, " $,\n\t()", &inst_ptr, NULL);
 								printf("reg: %s\n", reg);
 								if (reg == NULL || *reg == '#') {
 									break;
@@ -589,17 +583,16 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 					
 				}
 				// .data part reached
-
 				else {
-					fprintf(Out, "%s\n", "data data+++++++++++++++++++++++++++++++++++++");
+					//fprintf(Out, "%s\n", "data data+++++++++++++++++++++++++++++++++++++");
 					char *var_tok = NULL;
 					char *var_tok_ptr = tok_ptr;
 					// If variable is .word
-					fprintf(Out, "tok: %s\n", tok_ptr);
+					//fprintf(Out, "tok: %s\n", tok_ptr);
 					//fprintf(Out, "var_tok: %s\n", var_tok_ptr);
 					if (strstr(tok_ptr, ".word")) {
 						int var_value;
-						fprintf(Out, "%s\n", ".word+++++++++++++++++++++++++++++++++++++");
+						//fprintf(Out, "%s\n", ".word+++++++++++++++++++++++++++++++++++++");
 						// Variable is array
 						if (strstr(var_tok_ptr, ":")) {
 
@@ -620,35 +613,14 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 						// Variable is a single variable
 						else {
-							char *hex_pre = "0x";
-							char *tmp = NULL;
-
-							// Variable is hex format
-							if(strstr(var_tok_ptr,hex_pre) != NULL) {
-
-								tmp = parse_token(var_tok_ptr, hex_pre, &var_tok_ptr, NULL);
-								int len = strlen(var_tok_ptr);
-								printf("DATA LEN: '%d'\n", len);
-								if(len <= 10) {
-
-									sscanf(var_tok_ptr,"%x", &var_value);
-
-									//var_value = hex2bin(var_value);
-									//printf("HEX to BIN: %s\n", var_value);
-									word_rep(var_value, Out);
-								}
-								else {
-									fprintf(stderr, "Error! variable length out of size\n");
-								}
-							}
-							// Variable is dec format
-							else {
+							//else {
 								// Extract variable value, Skip %*s
-								sscanf(var_tok_ptr, "%*s, %d", &var_value);
-
+								printf("testtest\n");
+								sscanf(var_tok_ptr, "%*s %d", &var_value);
+								printf("%d\n", var_value);
 								// Variable is in var_value. Send to binary rep function
 								word_rep(var_value, Out);
-							}
+							//}
 							
 						}
 					}
@@ -874,11 +846,12 @@ void jtype_instruction(char *instruction, int immediate, FILE *Out) {
 
 // Write out the variable in binary
 void word_rep(int binary_rep, FILE *Out) {
-
+	printf("word_rep\n");
 	for (int k = 31; k >= 0; k--) {
 		fprintf(Out, "%c", (binary_rep & (1 << k)) ? '1' : '0');
-	}
 
+	}
+	//fprintf(Out, "ttttttttttt\n");
 	fprintf(Out, "\n");
 }
 
