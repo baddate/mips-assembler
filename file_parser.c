@@ -170,7 +170,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	char *tok_ptr, *ret, *token = NULL;
 	int32_t line_num = 1;
 	int data_reached = 0;
-	int32_t data_begin = 0x00000000; //Data begin address
+	int32_t data_begin; //Data begin address
 
 	while (1) {
 		if ((ret = fgets(line, MAX_LINE_LENGTH, fptr)) == NULL)
@@ -205,7 +205,9 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 					data_begin = data_begin + 4;
 			}
 			else if (strcmp(token, ".data") == 0) {
-				data_begin = 0x00000000;
+				char *temp = parse_token(tok_ptr, " \n\t$,", &tok_ptr, NULL);
+				data_begin = atoi(temp);
+				printf("data_begin %d\n", data_begin);
 				data_reached = 1;
 				//free(token);
 				continue;
