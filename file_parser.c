@@ -465,14 +465,17 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	                        // R-type
 	                        else if (strcmp(token, "jalr") == 0) {
 	                            rtype_instruction(token, reg_store[1], "00000", reg_store[0], 0, Out);
+	                            fprintf(Out, "%s\n", "00000000000000000000000000000000");
 	                        }
 	                        // R-type
 	                        else if (strcmp(token, "jr") == 0) {
 	                            rtype_instruction(token, reg_store[0], "00000", "00000", 0, Out);
+	                            fprintf(Out, "%s\n", "00000000000000000000000000000000");
 	                        }
 	                        // R-type
 	                        else if (strcmp(token, "eret") == 0) {
 	                            rtype_instruction(token, "10000", "00000", "00000", 0, Out);
+	                            fprintf(Out, "%s\n", "00000000000000000000000000000000");
 	                        }
 						}
 						// I-Type 
@@ -566,19 +569,23 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	                                // Send instruction to itype function
 
 	                                itype_instruction(token, reg_store[0], "00001", immediate, Out);
+	                                fprintf(Out, "%s\n", "00000000000000000000000000000000");
 	                            }
 	                            if (strcmp(token, "bgtz") == 0|| strcmp(token, "blez") == 0
 	                                    || strcmp(token, "bltz") == 0) {
 	                                // Send instruction to itype function
 	                                itype_instruction(token, reg_store[0], "00000", immediate, Out);
+	                            	fprintf(Out, "%s\n", "00000000000000000000000000000000");
 	                            }
 	                            if (strcmp(token, "bgezal") == 0 ) {
 	                                // Send instruction to itype function
 	                                itype_instruction(token, reg_store[0], "10001", immediate, Out);
+	                                fprintf(Out, "%s\n", "00000000000000000000000000000000");
 	                            }
 	                            if (strcmp(token, "bltzal") == 0) {
 	                                // Send instruction to itype function
 	                                itype_instruction(token, reg_store[0], "10000", immediate, Out);
+	                                fprintf(Out, "%s\n", "00000000000000000000000000000000");
 	                            }
 							}
 							
@@ -591,6 +598,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 	                        // Send to jtype function
 	                        jtype_instruction(token, immediate, Out);
+	                        fprintf(Out, "%s\n", "00000000000000000000000000000000");
 		                }
 					}
 					
