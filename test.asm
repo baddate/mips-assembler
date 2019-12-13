@@ -8,5 +8,5 @@ lw   $v0, buf($t0)
 addi  $t0, $t0, 4 
 sw   $v0, buf($t0)
 
-.data 11
-buf: .word 12
+.data 0x00000F
+buf: .word 0x12

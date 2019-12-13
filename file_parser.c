@@ -7,7 +7,10 @@
 #include "file_parser.h"
 #include "tokenizer.h"
 #include <errno.h>
+
 extern int search(char *instruction);
+size_t hexToDec(char *source);
+int getIndexOfSigns(char ch);
 /*
  * The structs below map a character to an integer.
  * They are used in order to map a specific instruciton/register to its binary format in ASCII
@@ -206,7 +209,15 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 			}
 			else if (strcmp(token, ".data") == 0) {
 				char *temp = parse_token(tok_ptr, " \n\t$,", &tok_ptr, NULL);
-				data_begin = atoi(temp);
+				if(strstr(temp,"0x") || strstr(temp,"0X")){
+					char *hex = strtok(temp, "x");
+					hex = strtok(NULL,"x");
+					printf("HEX: %s\n", hex);
+					data_begin = hexToDec(hex);
+				}
+				else {
+					data_begin = atoi(temp);
+				}
 				printf("data_begin %d\n", data_begin);
 				data_reached = 1;
 				//free(token);
@@ -615,15 +626,17 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 						// Variable is a single variable
 						else {
-							//else {
-								// Extract variable value, Skip %*s
-								printf("testtest\n");
+							if(strstr(var_tok_ptr,"0x")){
+								sscanf(var_tok_ptr, "%*s %x", &var_value);
+								printf("16jinzhi: %d\n", var_value);
+
+								//var_value = hexToDec(atoi(var_value));
+							}
+							else {
 								sscanf(var_tok_ptr, "%*s %d", &var_value);
-								printf("%d\n", var_value);
-								// Variable is in var_value. Send to binary rep function
-								word_rep(var_value, Out);
-							//}
-							
+								
+							}
+							word_rep(var_value, Out);
 						}
 					}
 					//
@@ -974,4 +987,38 @@ int getDec(char *bin) {
 	}
 
 	return sum;
+}
+
+size_t hexToDec(char *source)
+{
+    size_t sum = 0;
+    size_t t = 1;
+    int i, len;
+ 
+    len = strlen(source);
+    for(i=len-1; i>=0; i--)
+    {
+        sum += t * getIndexOfSigns(*(source + i));
+        t *= 16;
+    }  
+ 
+    return sum;
+}
+
+/* 返回ch字符在sign数组中的序号 */
+int getIndexOfSigns(char ch)
+{
+    if(ch >= '0' && ch <= '9')
+    {
+        return ch - '0';
+    }
+    if(ch >= 'A' && ch <='F') 
+    {
+        return ch - 'A' + 10;
+    }
+    if(ch >= 'a' && ch <= 'f')
+    {
+        return ch - 'a' + 10;
+    }
+    return -1;
 }
