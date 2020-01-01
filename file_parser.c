@@ -260,12 +260,12 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 					// If variable is .word
 					if (strstr(tok_ptr, ".word")) {
 
-						printf(".word\n");
+						//printf(".word\n");
 
 						// Variable is array
 						if (strstr(var_tok_ptr, ":")) {
 
-							printf("array\n");
+							//printf("array\n");
 
 							// Store the number in var_tok and the occurance in var_tok_ptr
 							var_tok = parse_token(var_tok_ptr, ":", &var_tok_ptr, NULL);
@@ -387,7 +387,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 							// Keeps a reference to which register has been parsed for storage
 							int count = 0;
 							while (1) {
-
+								printf("inst_ptr: %s\n", inst_ptr);
 								reg = parse_token(inst_ptr, " $,\n\t()", &inst_ptr, NULL);
 								printf("reg: %s\n", reg);
 								if (reg == NULL || *reg == '#') {
@@ -473,6 +473,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	                        }
 	                        // R-type
 	                        else if (strcmp(token, "jr") == 0) {
+	                        	printf("jr= %s\n", reg_store[0]);
 	                            rtype_instruction(token, reg_store[0], "00000", "00000", 0, Out);
 	                            fprintf(Out, "%s\n", "00000000000000000000000000000000");
 	                        }
@@ -516,9 +517,9 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
                                  	|| strcmp(token, "addiu")  == 0) {
 
 								// rt in position 0, rs in position 1 and immediate in position 2
-								printf("PIM: %d\n", reg_store[2]);
+								//printf("PIM: %d\n", reg_store[2]);
 								int immediate = atoi(reg_store[2]);
-								printf("IM: %d\n", immediate);
+								//printf("IM: %d\n", immediate);
 								itype_instruction(token, reg_store[1], reg_store[0], immediate, Out);
 
 								// Dealloc reg_store
@@ -758,7 +759,7 @@ char instruction_type(char *instruction) {
 
 // Return the binary representation of the register
 char *register_address(char *registerName) {
-	printf("asfsfgag: %s\n", registerName);
+	//printf("asfsfgag: %s\n", registerName);
 	size_t i;
 	for (i = 0; registerMap[i].name != NULL; i++) {
 		if (strcmp(registerName, registerMap[i].name) == 0) {
