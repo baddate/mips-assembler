@@ -225,7 +225,9 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 				continue;
 				//break;
 			}
-			
+			else if (strcmp(token, ".text") == 0) {
+				data_reached = 0;
+			}
 			if (pass == 1) {
 
 				printf("========== First pass ==========\n");
@@ -241,7 +243,8 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 					// Insert variable to hash table
 					uint32_t *inst_count;
 					inst_count = (uint32_t *)malloc(sizeof(uint32_t));
-					*inst_count = code_begin*(labelNum+1);
+					*inst_count = code_begin*(labelNum++);
+					printf("Label======== %d\n", *inst_count);
 					int32_t insert = hash_insert(hash_table, token, strlen(token)+1, inst_count);
 
 					if (insert != 1) {
@@ -563,9 +566,10 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 
 								int *address = hash_find(hash_table, reg_store[1], strlen(reg_store[1])+1);
-								int immediate = data_begin - *address;
+								int immediate = code_begin - *address;
 								immediate = immediate >> 2;
-								printf("bltz============: %d\n", *address);
+								printf("address============: %d\n", *address);
+								printf("immediate============: %d\n", immediate);
 								printf("data_begin============: %d\n", data_begin);
 								if (strcmp(token, "bgez") == 0) {
 	                                // Send instruction to itype function

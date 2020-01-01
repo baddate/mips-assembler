@@ -1,4 +1,4 @@
-
+.data 0x00
 .text
 delay:
 	addi $t2, $Zero, 10
@@ -16,4 +16,4 @@ label1:
 	add $t6, $Zero, $s2
 	j label0
 
-.data 0x12
+
