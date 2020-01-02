@@ -126,7 +126,7 @@ int main (int argc, char *argv[]) {
 		}
 
 		FILE *src;
-		src = fopen(argv[3], "r+");
+		src = fopen(argv[3], "w");
 		if (Out == NULL) {
 			printf("Output file could not opened.");
 			exit(1);
@@ -172,38 +172,37 @@ int main (int argc, char *argv[]) {
 		rewind(In);
 		passNumber = 2;
 		parse_file(In, passNumber, instructions, inst_len, hash_table, Out, src);
-
 		
+
 		// Close files
 		fclose(In);
 		fclose(Out);
-		char *ret;
-		rewind(src);
-		int i = 0;
-		while(fgets(ret, 2, src) != EOF) {
-			if(i<8) {
-				fputs(ret, data1);
-				printf("data1\n");
-				i++;
-			}
-			else if(i<16 && i>=8) {
-				fputs(ret, data2);
-				i++;
-			}
-			else if(i<24 && i>=16) {
-
-				fputs(ret, data3);
-				i++;
-			}
-			else if(i<32 && i>=24) {
-				fputs(ret, data4);
-				i++;
-				if(i==32)
-					i=0;
-			}
-
-		}
 		fclose(src);
+		FILE *fp = fopen("data.coe", "r");
+		int c;
+		int i=0;
+		while((c = fgetc(fp))!=EOF) {
+			if(i<8) {
+				fputc(c,data1);
+				i++;
+			}
+			else if(i>=8 && i <16) {
+				fputc(c,data2);
+				i++;
+			}
+			else if(i>=16 && i <24) {
+				fputc(c,data3);
+				i++;
+			}
+			else if(i>=24 && i <32) {
+				fputc(c,data4);
+				i++;
+				if(i==32){
+					i=0;
+					continue;
+				}
+			}
+		}
 		return 0;
 	}
 }
