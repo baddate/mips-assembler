@@ -174,7 +174,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	int32_t line_num = 1;
 	int data_reached = 0;
 	int32_t data_begin; //Data begin address
-	int32_t code_begin = 64;
+	int32_t code_begin = 0;
 	int32_t labelNum = 0;
 	while (1) {
 		if ((ret = fgets(line, MAX_LINE_LENGTH, fptr)) == NULL)
@@ -188,7 +188,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 			line_num++;
 			continue;
 		}
-
+		//printf("code_begin ======== %d\n", code_begin);
 		/* parse the tokens within a line */
 		while (1) {
 			token = parse_token(tok_ptr, " \n\t$,", &tok_ptr, NULL);
@@ -199,27 +199,28 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 				free(token);
 				break;
 			}
-			printf("token: %s\n", token);
+			//printf("token: %s\n", token);
 
 			int x = search(token);
 			if (x >= 0) {
+				//printf("token: %s\n", token);
 				if (strcmp(token, "bltz") == 0 || strcmp(token, "j") == 0)
-					data_begin = data_begin + 8;
+					code_begin = code_begin + 8;
 				else
-					data_begin = data_begin + 4;
+					code_begin = code_begin + 4;
 			}
 			else if (strcmp(token, ".data") == 0) {
 				char *temp = parse_token(tok_ptr, " \n\t$,", &tok_ptr, NULL);
 				if(strstr(temp,"0x") || strstr(temp,"0X")){
 					char *hex = strtok(temp, "x");
 					hex = strtok(NULL,"x");
-					printf("HEX: %s\n", hex);
+					//printf("HEX: %s\n", hex);
 					data_begin = hexToDec(hex);
 				}
 				else {
 					data_begin = atoi(temp);
 				}
-				printf("data_begin %d\n", data_begin);
+				//printf("data_begin %d\n", data_begin);
 				data_reached = 1;
 				//free(token);
 				continue;
@@ -228,14 +229,15 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 			else if (strcmp(token, ".text") == 0) {
 				data_reached = 0;
 			}
+
 			if (pass == 1) {
 
-				printf("========== First pass ==========\n");
+				//printf("========== First pass ==========\n");
 
 				// Strip out ":"
 				if (strstr(token, ":") && data_reached == 0) {
-
-					printf("Label\n");
+					printf("label ======== %d\n", code_begin);
+					//printf("Label\n");
 
 					size_t token_len = strlen(token);
 					token[token_len - 1] = '\0';
@@ -244,8 +246,10 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 					uint32_t *inst_count;
 					inst_count = (uint32_t *)malloc(sizeof(uint32_t));
 					//data_begin = data_begin + 4;
-					*inst_count = data_begin;
-					printf("Label======== %d\n", *inst_count);
+					//code_begin +=8;
+					*inst_count = code_begin;
+					//code_begin +=4;
+					printf("%s ======== %d\n", token, *inst_count);
 					int32_t insert = hash_insert(hash_table, token, strlen(token)+1, inst_count);
 
 					if (insert != 1) {
@@ -298,7 +302,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 								exit(1);
 							}
 
-							printf("End array\n");
+							//printf("End array\n");
 						}
 
 						// Variable is a single variable
@@ -321,7 +325,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 								exit(1);
 							}
 
-							printf("end singe var\n");
+							//printf("end singe var\n");
 						}
 					}
 
@@ -355,10 +359,12 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 			}
 
 			if(pass == 2) {
-				printf("========== Pass 2 ==========\n");
+				//printf("========== Pass 2 ==========\n");
 
 				// .text part reached
 				if (data_reached == 0) {
+					// printf("code ====== %d\n", code_begin);
+					// printf("token ====== %s\n", token);
 					//printf("TEXT-----------------------\n");
 					// Check instruction type
 					int instruction_supported = search(token);
@@ -389,9 +395,9 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 							// Keeps a reference to which register has been parsed for storage
 							int count = 0;
 							while (1) {
-								printf("inst_ptr: %s\n", inst_ptr);
+								//printf("inst_ptr: %s\n", inst_ptr);
 								reg = parse_token(inst_ptr, " $,\n\t()", &inst_ptr, NULL);
-								printf("reg: %s\n", reg);
+								//printf("reg: %s\n", reg);
 								if (reg == NULL || *reg == '#') {
 									break;
 								}
@@ -476,7 +482,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	                        }
 	                        // R-type
 	                        else if (strcmp(token, "jr") == 0) {
-	                        	printf("jr= %s\n", reg_store[0]);
+	                        	//printf("jr= %s\n", reg_store[0]);
 	                            rtype_instruction(token, reg_store[0], "00000", "00000", 0, Out);
 	                            fprintf(Out, "%s\n", "00000000000000000000000000000000,");
 	                            // data_begin += 4;
@@ -504,7 +510,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 								}
 								else { // rt in position 0, variable in position 1 and rs in position2
 									immediate = *address;
-									printf("The label address is %d\n", *address);
+									//printf("The label address is %d\n", *address);
 								}
 								itype_instruction(token, reg_store[2], reg_store[0], immediate, Out);
 
@@ -554,7 +560,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 								// Find hash address for a register and put in an immediate
 								int *address = hash_find(hash_table, reg_store[2], strlen(reg_store[2])+1);
 								
-								int immediate = *address + data_begin;
+								int immediate = *address - code_begin;
 
 								// Send instruction to itype function
 								itype_instruction(token, reg_store[0], reg_store[1], immediate, Out);
@@ -573,12 +579,13 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 
 								int *address = hash_find(hash_table, reg_store[1], strlen(reg_store[1])+1);
-								int immediate =  *address - data_begin;
-								printf("bltz  %d\n", immediate);
+								int immediate =  *address + 8 - code_begin;
+								printf("label addr %d\n", *address);
+								printf("bltz addr  %d\n", code_begin);
 								immediate = immediate >> 2;
-								printf("address============: %d\n", *address);
-								printf("immediate============: %d\n", immediate);
-								printf("data_begin============: %d\n", data_begin);
+								// printf("address============: %d\n", *address);
+								// printf("immediate============: %d\n", immediate);
+								// printf("data_begin============: %d\n", data_begin);
 								if (strcmp(token, "bgez") == 0) {
 	                                // Send instruction to itype function
 
@@ -611,7 +618,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 		                    int *address = hash_find(hash_table, reg_store[0], strlen(reg_store[0])+1);
 		                    printf("jaddr  %d\n", *address);
 		                    
-	                        int immediate = *address >> 2;
+	                        int immediate = (*address+4) >> 2;
 
 	                        // Send to jtype function
 	                        jtype_instruction(token, immediate, Out);

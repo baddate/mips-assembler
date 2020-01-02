@@ -8,8 +8,8 @@ delay:
 label0:
 	addi $t3, $Zero, 0
 	sub $t3, $s1, $t0
-	bltz $t0, label2
-	j label2
+	bltz $t0, label1
+	j label1
 label1:
 	addi $t4, $Zero, 1
 	sub $s1, $t4, $t5
