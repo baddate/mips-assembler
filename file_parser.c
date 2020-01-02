@@ -505,13 +505,16 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 								
 								int *address = hash_find(hash_table, reg_store[1], strlen(reg_store[1])+1);
 								int immediate = 0;
+								printf("LW: %s\n", reg_store[1]);
 								if(address == NULL) { // rt in position 0, immediate in position 1 and rs in position2
-									int immediate = atoi(reg_store[1]);
+									immediate = atoi(reg_store[1]);
+
 								}
 								else { // rt in position 0, variable in position 1 and rs in position2
 									immediate = *address;
 									//printf("The label address is %d\n", *address);
 								}
+								printf("tm: %d\n", immediate);
 								itype_instruction(token, reg_store[2], reg_store[0], immediate, Out);
 
 								// Dealloc reg_store
@@ -862,10 +865,10 @@ void itype_instruction(char *instruction, char *rs, char *rt, int immediateNum, 
 			opcode = iMap[i].address;
 		}
 	}
-
+	printf("immediateNum: %d\n", immediateNum);
 	// Convert immediate to binary
 	getBin(immediateNum, immediate, 16);
-
+	printf("immediate: %s\n", immediate);
 	// Print out the instruction to the file
 	fprintf(Out, "%s%s%s%s%s\n", opcode, rsBin, rtBin, immediate, ",");
 }
