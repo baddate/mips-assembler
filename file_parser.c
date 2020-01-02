@@ -167,7 +167,7 @@ struct {
 
 ///---------------------------------------------------------------------------------------------///
 
-void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, hash_table_t *hash_table, FILE *Out) {
+void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, hash_table_t *hash_table, FILE *Out, FILE *Data) {
 
 	char line[MAX_LINE_LENGTH + 1];
 	char *tok_ptr, *ret, *token = NULL;
@@ -635,7 +635,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 							// Value var_value is repeated freq times. Send to binary rep function
 							for (int i = 0; i < freq; i++) {
-								word_rep(var_value, Out);
+								word_rep(var_value, Data);
 							}
 						}
 
@@ -651,7 +651,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 								sscanf(var_tok_ptr, "%*s %d", &var_value);
 								
 							}
-							word_rep(var_value, Out);
+							word_rep(var_value, Data);
 						}
 					}
 					//
@@ -668,7 +668,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 							// Place string in var_tok
 							var_tok = parse_token(var_tok_ptr, "\"", &var_tok_ptr, NULL);
 
-							ascii_rep(var_tok, Out);
+							ascii_rep(var_tok, Data);
 						}
 					}
 				}

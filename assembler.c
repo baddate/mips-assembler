@@ -103,7 +103,7 @@ int string_comp(const void *a, const void *b) {
 int main (int argc, char *argv[]) {
 
 	// Make sure correct number of arguments input
-	if (argc != 3) {
+	if (argc != 8) {
 		printf("Incorrect number of arguments");
 	}
 
@@ -125,6 +125,38 @@ int main (int argc, char *argv[]) {
 			exit(1);
 		}
 
+		FILE *src;
+		src = fopen(argv[3], "r+");
+		if (Out == NULL) {
+			printf("Output file could not opened.");
+			exit(1);
+		}
+		
+		FILE *data1;
+		data1 = fopen(argv[4], "w");
+		if (Out == NULL) {
+			printf("Output file could not opened.");
+			exit(1);
+		}
+		FILE *data2;
+		data2 = fopen(argv[5], "w");
+		if (Out == NULL) {
+			printf("Output file could not opened.");
+			exit(1);
+		}
+		FILE *data3;
+		data3 = fopen(argv[6], "w");
+		if (Out == NULL) {
+			printf("Output file could not opened.");
+			exit(1);
+		}
+		FILE *data4;
+		data4 = fopen(argv[7], "w");
+		if (Out == NULL) {
+			printf("Output file could not opened.");
+			exit(1);
+		}
+
 		// Sort the array using qsort for faster search
 		qsort(instructions, inst_len, sizeof(char *), string_comp);
 
@@ -134,17 +166,44 @@ int main (int argc, char *argv[]) {
 		// Parse in passes
 
 		int passNumber = 1;
-		parse_file(In, passNumber, instructions, inst_len, hash_table, Out);
+		parse_file(In, passNumber, instructions, inst_len, hash_table, Out, src);
 
 		// Rewind input file & start pass 2
 		rewind(In);
 		passNumber = 2;
-		parse_file(In, passNumber, instructions, inst_len, hash_table, Out);
+		parse_file(In, passNumber, instructions, inst_len, hash_table, Out, src);
 
+		
 		// Close files
 		fclose(In);
 		fclose(Out);
+		char *ret;
+		rewind(src);
+		int i = 0;
+		while(fgets(ret, 2, src) != EOF) {
+			if(i<8) {
+				fputs(ret, data1);
+				printf("data1\n");
+				i++;
+			}
+			else if(i<16 && i>=8) {
+				fputs(ret, data2);
+				i++;
+			}
+			else if(i<24 && i>=16) {
 
+				fputs(ret, data3);
+				i++;
+			}
+			else if(i<32 && i>=24) {
+				fputs(ret, data4);
+				i++;
+				if(i==32)
+					i=0;
+			}
+
+		}
+		fclose(src);
 		return 0;
 	}
 }
