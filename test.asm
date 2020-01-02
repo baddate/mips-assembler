@@ -1,5 +1,4 @@
-.data 0x12
-buf: .word 12
+.data 0x00
 .text
 delay:
 	addi $t1, $Zero, 10
@@ -9,7 +8,7 @@ delay:
 label0:
 	addi $t3, $Zero, 0
 	sub $t3, $s1, $t0
-	bltz $t0, label1
+	bltz $t0, label2
 	j label2
 label1:
 	addi $t4, $Zero, 1

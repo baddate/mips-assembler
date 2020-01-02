@@ -174,7 +174,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	int32_t line_num = 1;
 	int data_reached = 0;
 	int32_t data_begin; //Data begin address
-	int32_t code_begin = 256;
+	int32_t code_begin = 64;
 	int32_t labelNum = 0;
 	while (1) {
 		if ((ret = fgets(line, MAX_LINE_LENGTH, fptr)) == NULL)
@@ -203,9 +203,9 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 			int x = search(token);
 			if (x >= 0) {
-				// if (strcmp(token, "la") == 0)
-				// 	data_begin = data_begin + 8;
-				// else
+				if (strcmp(token, "bltz") == 0 || strcmp(token, "j") == 0)
+					data_begin = data_begin + 8;
+				else
 					data_begin = data_begin + 4;
 			}
 			else if (strcmp(token, ".data") == 0) {
@@ -243,7 +243,8 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 					// Insert variable to hash table
 					uint32_t *inst_count;
 					inst_count = (uint32_t *)malloc(sizeof(uint32_t));
-					*inst_count = code_begin*(labelNum++);
+					//data_begin = data_begin + 4;
+					*inst_count = data_begin;
 					printf("Label======== %d\n", *inst_count);
 					int32_t insert = hash_insert(hash_table, token, strlen(token)+1, inst_count);
 
@@ -288,6 +289,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 							// Insert variable to hash table
 							uint32_t *inst_count;
 							inst_count = (uint32_t *)malloc(sizeof(uint32_t));
+							//data_begin += 4;
 							*inst_count = data_begin;
 							int32_t insert = hash_insert(hash_table, token, strlen(token)+1, inst_count);
 
@@ -423,7 +425,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 									|| strcmp(token, "nor") == 0 || strcmp(token, "xor") == 0
 									|| strcmp(token, "slt") == 0 || strcmp(token, "sltu") == 0
 									) {
-								rtype_instruction(token, reg_store[1], reg_store[2], reg_store[0], 0, Out);
+								rtype_instruction(token, reg_store[0], reg_store[1], reg_store[2], 0, Out);
 								
 								// Dealloc reg_store
 								for (int i = 0; i < 3; i++) {
@@ -469,18 +471,21 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	                        // R-type
 	                        else if (strcmp(token, "jalr") == 0) {
 	                            rtype_instruction(token, reg_store[1], "00000", reg_store[0], 0, Out);
-	                            fprintf(Out, "%s\n", "00000000000000000000000000000000");
+	                            fprintf(Out, "%s\n", "00000000000000000000000000000000,");
+	                            // data_begin += 4;
 	                        }
 	                        // R-type
 	                        else if (strcmp(token, "jr") == 0) {
 	                        	printf("jr= %s\n", reg_store[0]);
 	                            rtype_instruction(token, reg_store[0], "00000", "00000", 0, Out);
-	                            fprintf(Out, "%s\n", "00000000000000000000000000000000");
+	                            fprintf(Out, "%s\n", "00000000000000000000000000000000,");
+	                            // data_begin += 4;
 	                        }
 	                        // R-type
 	                        else if (strcmp(token, "eret") == 0) {
 	                            rtype_instruction(token, "10000", "00000", "00000", 0, Out);
-	                            fprintf(Out, "%s\n", "00000000000000000000000000000000");
+	                            fprintf(Out, "%s\n", "00000000000000000000000000000000,");
+	                            // data_begin += 4;
 	                        }
 						}
 						// I-Type 
@@ -553,7 +558,8 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 								// Send instruction to itype function
 								itype_instruction(token, reg_store[0], reg_store[1], immediate, Out);
-
+								fprintf(Out, "%s\n", "00000000000000000000000000000000,");
+								// data_begin += 4;
 								// Dealloc reg_store
 								for (int i = 0; i < 2; i++) {
 									free(reg_store[i]);
@@ -567,7 +573,8 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 
 								int *address = hash_find(hash_table, reg_store[1], strlen(reg_store[1])+1);
-								int immediate = code_begin - *address;
+								int immediate =  *address - data_begin;
+								printf("bltz  %d\n", immediate);
 								immediate = immediate >> 2;
 								printf("address============: %d\n", *address);
 								printf("immediate============: %d\n", immediate);
@@ -576,24 +583,25 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	                                // Send instruction to itype function
 
 	                                itype_instruction(token, reg_store[0], "00001", immediate, Out);
-	                                fprintf(Out, "%s\n", "00000000000000000000000000000000");
+	                                fprintf(Out, "%s\n", "00000000000000000000000000000000,");
 	                            }
 	                            if (strcmp(token, "bgtz") == 0|| strcmp(token, "blez") == 0
 	                                    || strcmp(token, "bltz") == 0) {
 	                                // Send instruction to itype function
 	                                itype_instruction(token, reg_store[0], "00000", immediate, Out);
-	                            	fprintf(Out, "%s\n", "00000000000000000000000000000000");
+	                            	fprintf(Out, "%s\n", "00000000000000000000000000000000,");
 	                            }
 	                            if (strcmp(token, "bgezal") == 0 ) {
 	                                // Send instruction to itype function
 	                                itype_instruction(token, reg_store[0], "10001", immediate, Out);
-	                                fprintf(Out, "%s\n", "00000000000000000000000000000000");
+	                                fprintf(Out, "%s\n", "00000000000000000000000000000000,");
 	                            }
 	                            if (strcmp(token, "bltzal") == 0) {
 	                                // Send instruction to itype function
 	                                itype_instruction(token, reg_store[0], "10000", immediate, Out);
-	                                fprintf(Out, "%s\n", "00000000000000000000000000000000");
+	                                fprintf(Out, "%s\n", "00000000000000000000000000000000,");
 	                            }
+	                           // data_begin += 4;
 							}
 							
 						}
@@ -601,11 +609,14 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 		                else if (inst_type == 'j') {
 		                    // Find hash address for a label and put in an immediate
 		                    int *address = hash_find(hash_table, reg_store[0], strlen(reg_store[0])+1);
+		                    printf("jaddr  %d\n", *address);
+		                    
 	                        int immediate = *address >> 2;
 
 	                        // Send to jtype function
 	                        jtype_instruction(token, immediate, Out);
-	                        fprintf(Out, "%s\n", "00000000000000000000000000000000");
+	                        fprintf(Out, "%s\n", "00000000000000000000000000000000,");
+	                       // data_begin += 4;
 		                }
 					}
 					
@@ -813,7 +824,7 @@ void rtype_instruction(char *instruction, char *rs, char *rt, char *rd, int sham
         opcode = "010000";
 
 	// Print out the instruction to the file
-	fprintf(Out, "%s%s%s%s%s%s\n", opcode, rsBin, rtBin, rdBin, shamtBin, func);
+	fprintf(Out, "%s%s%s%s%s%s%s\n", opcode, rsBin, rtBin, rdBin, shamtBin, func, ",");
 }
 
 // Write out the I-Type instruction
@@ -849,7 +860,7 @@ void itype_instruction(char *instruction, char *rs, char *rt, int immediateNum, 
 	getBin(immediateNum, immediate, 16);
 
 	// Print out the instruction to the file
-	fprintf(Out, "%s%s%s%s\n", opcode, rsBin, rtBin, immediate);
+	fprintf(Out, "%s%s%s%s%s\n", opcode, rsBin, rtBin, immediate, ",");
 }
 
 // Write out the J-Type instruction
@@ -871,7 +882,7 @@ void jtype_instruction(char *instruction, int immediate, FILE *Out) {
 	getBin(immediate, immediateStr, 26);
 
 	// Print out instruction to file
-	fprintf(Out, "%s%s\n", opcode, immediateStr);
+	fprintf(Out, "%s%s%s\n", opcode, immediateStr, ",");
 }
 
 // Write out the variable in binary
@@ -882,7 +893,7 @@ void word_rep(int binary_rep, FILE *Out) {
 
 	}
 	//fprintf(Out, "ttttttttttt\n");
-	fprintf(Out, "\n");
+	fprintf(Out, ",\n");
 }
 
 // Write out the ascii string
@@ -944,7 +955,7 @@ void ascii_rep(char string[], FILE *Out) {
 			}
 		}
 
-		fprintf(Out, "\n");
+		fprintf(Out, ",\n");
 	}
 
 	// Deallocate sep_str
