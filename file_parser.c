@@ -481,7 +481,9 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	                        else if (strcmp(token, "mfc0") == 0 || strcmp(token, "mtc0") == 0) {
 
 	                            if (strcmp(token, "mfc0") == 0 ) {
+	                            	printf("mfc0 --------   \n");
 	                                rtype_instruction(token, "00000", reg_store[0], reg_store[1], 0, Out);
+	                                printf("mfc0 -----+++++---   \n");
 	                            }
 
 	                            if (strcmp(token, "mtc0") == 0) {
@@ -503,9 +505,16 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	                        }
 	                        // R-type
 	                        else if (strcmp(token, "eret") == 0) {
+	                        	printf("eret--------   \n");
 	                            rtype_instruction(token, "10000", "00000", "00000", 0, Out);
 	                            fprintf(Out, "%s\n", "00000000000000000000000000000000,");
 	                            // data_begin += 4;
+	                        }
+	                        else if (strcmp(token, "syscall") == 0) {
+	                        	fprintf(Out, "%s\n", "00000000000000000000000000001100,");
+	                        }
+	                        else if (strcmp(token, "break") == 0) {
+	                        	fprintf(Out, "%s\n", "00000000000000000000000000001101,");
 	                        }
 						}
 						// I-Type 
@@ -543,7 +552,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 									|| strcmp(token, "slti") == 0 || strcmp(token, "addi") == 0
 									|| strcmp(token, "xori")   == 0 || strcmp(token, "sltiu") == 0
                                  	|| strcmp(token, "addiu")  == 0) {
-
+								printf("token --------   %s\n", token);
 								// rt in position 0, rs in position 1 and immediate in position 2
 								//printf("PIM: %d\n", reg_store[2]);
 								int immediate = atoi(reg_store[2]);
@@ -573,11 +582,15 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 							else if (strcmp(token, "beq") == 0 || strcmp(token, "bne") == 0) {
 
 								//reg = parse_token(inst_ptr, " $,\n\t", &inst_ptr, NULL);
-
+								printf("bne --------   %s\n", reg_store[2]);
 								// Find hash address for a register and put in an immediate
 								int *address = hash_find(hash_table, reg_store[2], strlen(reg_store[2])+1);
-								
-								int immediate = *address + 4 - code_begin;
+								int immediate;
+								if(address == NULL) {
+									immediate = atoi(reg_store[2])*4;
+								}
+								else
+									immediate = *address + 4 - code_begin;
 								immediate = immediate >> 2;
 								// Send instruction to itype function
 								itype_instruction(token, reg_store[0], reg_store[1], immediate, Out);
@@ -596,7 +609,12 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 
 								int *address = hash_find(hash_table, reg_store[1], strlen(reg_store[1])+1);
-								int immediate =  *address + 4 - code_begin;
+								int immediate;
+								if(address == NULL) {
+									immediate = atoi(reg_store[2])*4;
+								}
+								else
+									immediate = *address + 4 - code_begin;
 								// printf("label addr %d\n", *address);
 								// printf("bltz addr  %d\n", code_begin);
 								immediate = immediate >> 2;
@@ -635,7 +653,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 		                    int *address = hash_find(hash_table, reg_store[0], strlen(reg_store[0])+1);
 		                    // printf("j addr  %d\n", *address);
 		                    
-	                        int immediate = (*address+4) >> 2;
+	                        int immediate = (*address+4+35*4) >> 2;
 
 	                        // Send to jtype function
 	                        jtype_instruction(token, immediate, Out);
