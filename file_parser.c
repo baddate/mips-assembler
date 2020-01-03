@@ -16,27 +16,27 @@ int getIndexOfSigns(char ch);
  * They are used in order to map a specific instruciton/register to its binary format in ASCII
  */
 
-struct {
-    const char* bin;
-    const char hex;
-} bin2hex_table[] = {
-    { "0000", '0'},
-    { "0001", '1'},
-    { "0010", '2'},
-    { "0011", '3'},
-    { "0100", '4'},
-    { "0101", '5'},
-    { "0110", '6'},
-    { "0111", '7'},
-    { "1000", '8'},
-    { "1001", '9'},
-    { "1010", 'A'},
-    { "1011", 'B'},
-    { "1100", 'C'},
-    { "1101", 'D'},
-    { "1110", 'E'},
-    { "1111", 'F'}
-};
+// struct {
+//     const char* bin;
+//     const char hex;
+// } bin2hex_table[] = {
+//     { "0000", '0'},
+//     { "0001", '1'},
+//     { "0010", '2'},
+//     { "0011", '3'},
+//     { "0100", '4'},
+//     { "0101", '5'},
+//     { "0110", '6'},
+//     { "0111", '7'},
+//     { "1000", '8'},
+//     { "1001", '9'},
+//     { "1010", 'A'},
+//     { "1011", 'B'},
+//     { "1100", 'C'},
+//     { "1101", 'D'},
+//     { "1110", 'E'},
+//     { "1111", 'F'}
+// };
 
 // Struct that stores registers and their respective binary reference
 struct {
@@ -188,7 +188,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 			line_num++;
 			continue;
 		}
-		printf("code_begin ======== %d\n", code_begin);
+		//printf("code_begin ======== %d\n", code_begin);
 		/* parse the tokens within a line */
 		while (1) {
 			token = parse_token(tok_ptr, " \n\t$,", &tok_ptr, NULL);
@@ -240,9 +240,9 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 				// Strip out ":"
 				if (strstr(token, ":") && data_reached == 0) {
-					//printf("label ======== %d\n", code_begin);
+					//printf("label ======== %s\n", token);
 					//printf("Label\n");
-
+					
 					size_t token_len = strlen(token);
 					token[token_len - 1] = '\0';
 
@@ -255,7 +255,17 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 					//code_begin +=4;
 					printf("%s ======== %d\n", token, *inst_count);
 					int32_t insert = hash_insert(hash_table, token, strlen(token)+1, inst_count);
+					if(strcmp(token,"main")==0) {
+						
+						char addr[27];
 
+						int address = (int)(*inst_count+4)>>2;
+
+						getBin(address, addr, 26);
+						printf("addr %s\n", "aa");
+						fprintf(Out, "%s\n", "memory_initialization_radix = 2;\nmemory_initialization_vector =");
+						fprintf(Out, "%s%s%s\n", "000010", addr,",");
+					}
 					if (insert != 1) {
 						fprintf(Out, "Error inserting into hash table\n");
 						exit(1);
@@ -435,7 +445,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 									|| strcmp(token, "nor") == 0 || strcmp(token, "xor") == 0
 									|| strcmp(token, "slt") == 0 || strcmp(token, "sltu") == 0
 									) {
-								rtype_instruction(token, reg_store[0], reg_store[1], reg_store[2], 0, Out);
+								rtype_instruction(token, reg_store[1], reg_store[2], reg_store[0], 0, Out);
 								
 								// Dealloc reg_store
 								for (int i = 0; i < 3; i++) {
@@ -567,8 +577,8 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 								// Find hash address for a register and put in an immediate
 								int *address = hash_find(hash_table, reg_store[2], strlen(reg_store[2])+1);
 								
-								int immediate = *address + 8 - code_begin;
-
+								int immediate = *address + 4 - code_begin;
+								immediate = immediate >> 2;
 								// Send instruction to itype function
 								itype_instruction(token, reg_store[0], reg_store[1], immediate, Out);
 								fprintf(Out, "%s\n", "00000000000000000000000000000000,");
@@ -586,7 +596,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 
 								int *address = hash_find(hash_table, reg_store[1], strlen(reg_store[1])+1);
-								int immediate =  *address + 8 - code_begin;
+								int immediate =  *address + 4 - code_begin;
 								// printf("label addr %d\n", *address);
 								// printf("bltz addr  %d\n", code_begin);
 								immediate = immediate >> 2;
