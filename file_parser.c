@@ -188,7 +188,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 			line_num++;
 			continue;
 		}
-		//printf("code_begin ======== %d\n", code_begin);
+		printf("code_begin ======== %d\n", code_begin);
 		/* parse the tokens within a line */
 		while (1) {
 			token = parse_token(tok_ptr, " \n\t$,", &tok_ptr, NULL);
@@ -203,8 +203,12 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 			int x = search(token);
 			if (x >= 0) {
-				//printf("token: %s\n", token);
-				if (strcmp(token, "bltz") == 0 || strcmp(token, "j") == 0)
+				// printf("token: %s\n", token);
+				if (strcmp(token, "bne") == 0 || strcmp(token, "beq") == 0 || strcmp(token, "bgez") == 0 || strcmp(token, "bgtz") == 0
+					|| strcmp(token, "blez") == 0 || strcmp(token, "bltz") == 0 || strcmp(token, "bgezal") == 0 || strcmp(token, "bltzal") == 0
+					|| strcmp(token, "j") == 0 || strcmp(token, "jal") == 0 || strcmp(token, "eret") == 0 || strcmp(token, "jalr") == 0
+					|| strcmp(token, "jr") == 0
+					)
 					code_begin = code_begin + 8;
 				else
 					code_begin = code_begin + 4;
@@ -236,7 +240,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 				// Strip out ":"
 				if (strstr(token, ":") && data_reached == 0) {
-					printf("label ======== %d\n", code_begin);
+					//printf("label ======== %d\n", code_begin);
 					//printf("Label\n");
 
 					size_t token_len = strlen(token);
@@ -482,7 +486,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 	                        }
 	                        // R-type
 	                        else if (strcmp(token, "jr") == 0) {
-	                        	//printf("jr= %s\n", reg_store[0]);
+	                        	printf("jr= %s\n", reg_store[0]);
 	                            rtype_instruction(token, reg_store[0], "00000", "00000", 0, Out);
 	                            fprintf(Out, "%s\n", "00000000000000000000000000000000,");
 	                            // data_begin += 4;
@@ -505,7 +509,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 								
 								int *address = hash_find(hash_table, reg_store[1], strlen(reg_store[1])+1);
 								int immediate = 0;
-								printf("LW: %s\n", reg_store[1]);
+								//printf("LW: %s\n", reg_store[1]);
 								if(address == NULL) { // rt in position 0, immediate in position 1 and rs in position2
 									immediate = atoi(reg_store[1]);
 
@@ -514,7 +518,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 									immediate = *address;
 									//printf("The label address is %d\n", *address);
 								}
-								printf("tm: %d\n", immediate);
+								//printf("tm: %d\n", immediate);
 								itype_instruction(token, reg_store[2], reg_store[0], immediate, Out);
 
 								// Dealloc reg_store
@@ -563,7 +567,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 								// Find hash address for a register and put in an immediate
 								int *address = hash_find(hash_table, reg_store[2], strlen(reg_store[2])+1);
 								
-								int immediate = *address - code_begin;
+								int immediate = *address + 8 - code_begin;
 
 								// Send instruction to itype function
 								itype_instruction(token, reg_store[0], reg_store[1], immediate, Out);
@@ -583,8 +587,8 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 
 								int *address = hash_find(hash_table, reg_store[1], strlen(reg_store[1])+1);
 								int immediate =  *address + 8 - code_begin;
-								printf("label addr %d\n", *address);
-								printf("bltz addr  %d\n", code_begin);
+								// printf("label addr %d\n", *address);
+								// printf("bltz addr  %d\n", code_begin);
 								immediate = immediate >> 2;
 								// printf("address============: %d\n", *address);
 								// printf("immediate============: %d\n", immediate);
@@ -619,7 +623,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 		                else if (inst_type == 'j') {
 		                    // Find hash address for a label and put in an immediate
 		                    int *address = hash_find(hash_table, reg_store[0], strlen(reg_store[0])+1);
-		                    printf("jaddr  %d\n", *address);
+		                    // printf("j addr  %d\n", *address);
 		                    
 	                        int immediate = (*address+4) >> 2;
 
@@ -865,10 +869,10 @@ void itype_instruction(char *instruction, char *rs, char *rt, int immediateNum, 
 			opcode = iMap[i].address;
 		}
 	}
-	printf("immediateNum: %d\n", immediateNum);
+	// printf("immediateNum: %d\n", immediateNum);
 	// Convert immediate to binary
 	getBin(immediateNum, immediate, 16);
-	printf("immediate: %s\n", immediate);
+	// printf("immediate: %s\n", immediate);
 	// Print out the instruction to the file
 	fprintf(Out, "%s%s%s%s%s\n", opcode, rsBin, rtBin, immediate, ",");
 }
