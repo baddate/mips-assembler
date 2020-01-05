@@ -653,7 +653,7 @@ void parse_file(FILE *fptr, int pass, char *instructions[], size_t inst_len, has
 		                    int *address = hash_find(hash_table, reg_store[0], strlen(reg_store[0])+1);
 		                    // printf("j addr  %d\n", *address);
 		                    
-	                        int immediate = (*address+4+35*4) >> 2;
+	                        int immediate = (*address+4) >> 2;
 
 	                        // Send to jtype function
 	                        jtype_instruction(token, immediate, Out);
@@ -935,7 +935,7 @@ void word_rep(int binary_rep, FILE *Out) {
 
 	}
 	//fprintf(Out, "ttttttttttt\n");
-	fprintf(Out, ",\n");
+	fprintf(Out, "\n");
 }
 
 // Write out the ascii string
