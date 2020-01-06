@@ -103,7 +103,7 @@ int string_comp(const void *a, const void *b) {
 int main (int argc, char *argv[]) {
 
 	// Make sure correct number of arguments input
-	if (argc != 8) {
+	if (argc != 2) {
 		printf("Incorrect number of arguments");
 	}
 
@@ -119,39 +119,39 @@ int main (int argc, char *argv[]) {
 		}
 
 		FILE *Out;
-		Out = fopen(argv[2], "w");
+		Out = fopen("code.coe", "w");
 		if (Out == NULL) {
 			printf("Output file could not opened.");
 			exit(1);
 		}
 
 		FILE *src;
-		src = fopen(argv[3], "w");
+		src = fopen("data.coe", "w");
 		if (Out == NULL) {
 			printf("Output file could not opened.");
 			exit(1);
 		}
 		
 		FILE *data1;
-		data1 = fopen(argv[4], "w");
+		data1 = fopen("data1.coe", "w");
 		if (Out == NULL) {
 			printf("Output file could not opened.");
 			exit(1);
 		}
 		FILE *data2;
-		data2 = fopen(argv[5], "w");
+		data2 = fopen("data2.coe", "w");
 		if (Out == NULL) {
 			printf("Output file could not opened.");
 			exit(1);
 		}
 		FILE *data3;
-		data3 = fopen(argv[6], "w");
+		data3 = fopen("data3.coe", "w");
 		if (Out == NULL) {
 			printf("Output file could not opened.");
 			exit(1);
 		}
 		FILE *data4;
-		data4 = fopen(argv[7], "w");
+		data4 = fopen("data4.coe", "w");
 		if (Out == NULL) {
 			printf("Output file could not opened.");
 			exit(1);
